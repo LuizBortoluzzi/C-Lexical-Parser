@@ -65,11 +65,12 @@
 
 char c;
 char lex[20];
-int line = 0;
+int line = 1;
 int column = 1;
 int pos = 0;
 int token;
 FILE *file;
+FILE *output;
 
 struct reserved_keyword
 {
@@ -115,6 +116,7 @@ void next_char()
         return;
     }
     fread(&c, 1, 1, file);
+    column++;
 }
 
 void get_token()
@@ -124,7 +126,6 @@ void get_token()
     int posl = 0;
     while (!end)
     {
-        // printf("Character: %c Line: %d\n", c, pos);
         lex[posl++] = c;
         switch (state)
         {
@@ -445,12 +446,21 @@ void get_token()
                 token = TK_EOF;
                 return;
             }
-            if (c == ' ' || c == '\n' || c == '\t' || c == '\r')
+            if (c == ' ' || c == '\t' || c == '\r')
             {
                 next_char();
                 posl--;
                 break;
             }
+            if (c == '\n')
+            {
+                column = 0;
+                line++;
+                next_char();
+                posl--;
+                break;
+            }
+
             if (c == '\0')
             {
                 token = -1;
@@ -490,9 +500,15 @@ void get_token()
 int main()
 {
     file = fopen("program.c", "rb");
+    output = fopen("output.txt", "wb");
     if (!file)
     {
         printf("Error while opening file.\n");
+        return 0;
+    }
+    if (!output)
+    {
+        printf("Error while opening output file.\n");
         return 0;
     }
     next_char(); // Gets the first character of file
@@ -500,6 +516,11 @@ int main()
     while (token != TK_EOF)
     {
         printf("%d %s\n", token, lex);
+        printf("Line: %d Column %d\n", line, column);
+        fprintf(output, "%s \n Line: %d  Column: %d \n", lex, line, column);
         get_token();
     }
+    fclose(file);
+    fclose(output);
+    printf("Recorded Data Successfuly!!\n");
 }
